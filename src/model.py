@@ -94,9 +94,9 @@ class SegmentCarNumber:
         return prediction
     
     @staticmethod
-    def perspective_transform_rgb(image_rgb, mask_img) -> np.ndarray:
+    def perspective_transform_rgb(image_rgb: np.ndarray, mask_img: np.ndarray) -> np.ndarray:
         _, binary_mask = cv2.threshold(mask_img, 200, 255, cv2.THRESH_BINARY)
-        contours, _ = cv2.findContours(binary_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv2.findContours(binary_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         if len(contours) == 0:
             return image_rgb
         
