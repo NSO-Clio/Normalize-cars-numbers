@@ -11,20 +11,6 @@ from glob import glob
 import os, cv2
 
 
-def rle_decode(coordinates: str, image_shape=(64, 192)) -> np.ndarray:
-    points = []
-    dt = coordinates.split()
-    for i in range(0, len(dt), 2):
-        points.append((int(dt[i]), int(dt[i + 1])))
-    mask = np.zeros(image_shape, dtype=np.uint8)
-    for coord in points:
-        mask[coord[1] - 1, coord[0] - 1] = 1
-    for i in range(len(points) - 1):
-        cv2.line(mask, points[i], points[i + 1], (1, 1, 1), 1)
-    cv2.fillPoly(mask, [np.array(points)], (1, 1, 1))
-    return mask
-
-
 class SegmentationDataset(Dataset):
     def __init__(self, dataframe: pd.DataFrame, transform=None, mask_transform=None, train=False) -> None:
         self.dataframe = dataframe
@@ -52,43 +38,6 @@ class SegmentationDataset(Dataset):
         return image, mask if self.train else image
 
 
-class Metrics:
-    @staticmethod
-    def f1_score(y_true, y_pred, threshold=0.5):
-        y_pred = (y_pred > threshold).float()
-        tp = (y_true * y_pred).sum().to(torch.float32)
-        tn = ((1 - y_true) * (1 - y_pred)).sum().to(torch.float32)
-        fp = ((1 - y_true) * y_pred).sum().to(torch.float32)
-        fn = (y_true * (1 - y_pred)).sum().to(torch.float32)
-        precision = tp / (tp + fp + 1e-6)
-        recall = tp / (tp + fn + 1e-6)
-        f1 = 2 * (precision * recall) / (precision + recall + 1e-6)
-        return f1.item()
-
-    @staticmethod
-    def precision(y_true, y_pred, threshold=0.5):
-        y_pred = (y_pred > threshold).float()
-        tp = (y_true * y_pred).sum().to(torch.float32)
-        fp = ((1 - y_true) * y_pred).sum().to(torch.float32)
-        precision = tp / (tp + fp + 1e-6)
-        return precision.item()
-
-    @staticmethod
-    def recall(y_true, y_pred, threshold=0.5):
-        y_pred = (y_pred > threshold).float()
-        tp = (y_true * y_pred).sum().to(torch.float32)
-        fn = (y_true * (1 - y_pred)).sum().to(torch.float32)
-        recall = tp / (tp + fn + 1e-6)
-        return recall.item()
-
-    @staticmethod
-    def accuracy(y_true, y_pred, threshold=0.5):
-        y_pred = (y_pred > threshold).float()
-        correct = (y_true == y_pred).float().sum()
-        accuracy = correct / y_true.numel()
-        return accuracy.item()
-
-
 class SegmentCarNumber:
     def __init__(self, unet_path: str, encoder_path: str) -> None:
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -113,34 +62,36 @@ class SegmentCarNumber:
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
-    
-    def predict(self, image: str | Image.Image, batch_size=None, shuffle=False, num_workers=2) -> np.ndarray:
-        self.model.eval()
-        if batch_size:
-            result_pred = []
-            data = pd.DataFrame({'image_path': [os.path.join(image, f) for f in os.listdir(image)]})
-            dataset = SegmentationDataset(dataframe=data, transform=self.image_transform)
-            data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
-            
-            for indx, batch in enumerate(tqdm(data_loader)):
-                images, _ = batch
-                with torch.no_grad():
-                    prediction = self.model(images.to(self.device))
-                result_pred.extend([i for i in 
-                    (torch.sigmoid(prediction).cpu().permute(0, 2, 3, 1).detach().numpy()* 255).astype(np.uint8)
-                    ])
-            return result_pred
-        else:
-            if isinstance(image, str):
-                image = Image.open(image).convert('RGB')
-                image = self.image_transform(image)
-            elif isinstance(image, Image.Image):
-                image = self.image_transform(image)
+
+    def predict_dir(self, dir_imgs: str, output_path: str, batch_size=None, shuffle=False, num_workers=2):
+        result_pred = []
+        data = pd.DataFrame({'image_path': [os.path.join(dir_imgs, f) for f in os.listdir(dir_imgs)]})
+        dataset = SegmentationDataset(dataframe=data, transform=self.image_transform)
+        data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
+        ind = 0
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+        for indx, batch in enumerate(tqdm(data_loader)):
+            images, _ = batch
             with torch.no_grad():
-                prediction = self.model(image.to(self.device).unsqueeze(0))
-            prediction = torch.sigmoid(prediction[0]).cpu().permute(1, 2, 0).detach().numpy()
-            prediction = (prediction * 255).astype(np.uint8)
-            return prediction
+                prediction = self.model(images.to(self.device))
+            for elem in (torch.sigmoid(prediction).cpu().permute(0, 2, 3, 1).detach().numpy()* 255).astype(np.uint8):
+                cv2.imwrite(os.path.join(output_path, str(ind) + '.jpg'), elem)
+                ind += 1
+        return result_pred
+
+    def predict(self, image: str | Image.Image) -> np.ndarray:
+        self.model.eval()
+        if isinstance(image, str):
+            image = Image.open(image).convert('RGB')
+            image = self.image_transform(image)
+        elif isinstance(image, Image.Image):
+            image = self.image_transform(image)
+        with torch.no_grad():
+            prediction = self.model(image.to(self.device).unsqueeze(0))
+        prediction = torch.sigmoid(prediction[0]).cpu().permute(1, 2, 0).detach().numpy()
+        prediction = (prediction * 255).astype(np.uint8)
+        return prediction
     
     @staticmethod
     def perspective_transform_rgb(image_rgb, mask_img) -> np.ndarray:
@@ -153,8 +104,7 @@ class SegmentCarNumber:
         rect = cv2.minAreaRect(largest_contour)
         box = cv2.boxPoints(rect)
         box = np.int0(box)
-        
-        # Ensure that box points are in the correct order (top-left, top-right, bottom-right, bottom-left)
+
         rect = np.zeros((4, 2), dtype="float32")
         s = box.sum(axis=1)
         rect[0] = box[np.argmin(s)]
