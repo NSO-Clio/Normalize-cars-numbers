@@ -64,6 +64,7 @@ Beeline, сделанно в рамках хакатона Цифровой Пр
 
 - как запустить проект можно посмотреть по ссылке в папке [src](src/)
 - В папке [notebooks](notebooks/) указаны все Jupyter Notebook-и в которых проводился анализ и обучения модели
+- Веса модели можно посмотреть по ссылке https://drive.google.com/drive/folders/1NFzOVovRzFjN6iBO0q58cqdTAWhHdaTt?usp=drive_link
 
 # Наша команда
 
