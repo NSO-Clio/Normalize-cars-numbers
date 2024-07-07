@@ -7,7 +7,6 @@ import torchvision.transforms as transforms
 from skimage.transform import resize
 import segmentation_models_pytorch as smp
 from tqdm import tqdm
-from glob import glob
 import os
 import cv2
 
