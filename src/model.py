@@ -8,8 +8,8 @@ from skimage.transform import resize
 import segmentation_models_pytorch as smp
 from tqdm import tqdm
 from glob import glob
-import os, cv2
-import matplotlib.pyplot as plt
+import os
+import cv2
 
 
 def transform(image: np.ndarray, mas_points: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -148,12 +148,12 @@ class SegmentCarNumber:
         image_rgb = cv2.resize(image_rgb, (192, 64), interpolation=cv2.INTER_LINEAR)
         _, binary_mask = cv2.threshold(mask_img, 200, 255, cv2.THRESH_BINARY)
         binary_mask = cv2.convertScaleAbs(binary_mask)
-        try:
-            contours, _ = cv2.findContours(binary_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
-        except:
-            print(binary_mask.dtype)  # Should output uint8 (CV_8UC1)
-            print(binary_mask.shape)
-            plt.imshow(binary_mask)
+        # try:
+        contours, _ = cv2.findContours(binary_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        # except:
+        #     print(binary_mask.dtype)  # Should output uint8 (CV_8UC1)
+        #     print(binary_mask.shape)
+        #     plt.imshow(binary_mask)
         if len(contours) == 0:
             return image_rgb
         
