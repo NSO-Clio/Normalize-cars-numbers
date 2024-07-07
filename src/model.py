@@ -118,6 +118,7 @@ class SegmentCarNumber:
     
     @staticmethod
     def perspective_transform_rgb(image_rgb: np.ndarray, mask_img: np.ndarray) -> np.ndarray:
+        image_rgb = cv2.resize(image_rgb, (192, 64), interpolation=cv2.INTER_LINEAR)
         _, binary_mask = cv2.threshold(mask_img, 200, 255, cv2.THRESH_BINARY)
         binary_mask = cv2.convertScaleAbs(binary_mask)
         try:
@@ -131,7 +132,7 @@ class SegmentCarNumber:
         largest_contour = max(contours, key=cv2.contourArea)
         rect = cv2.minAreaRect(largest_contour)
         box = cv2.boxPoints(rect)
-        box = np.int0(box)
+        box = np.int8(box)
         rect = np.zeros((4, 2), dtype="float32")
         s = box.sum(axis=1)
         rect[0] = box[np.argmin(s)]
@@ -177,6 +178,7 @@ class SegmentCarNumber:
             mas_points = np.array(mas_points, dtype=np.float32)
             mas_points = order_points(mas_points)  # Использование функции order_points для сортировки
             # print(mas_points)
+            your_image = cv2.resize(your_image, (192, 64), interpolation=cv2.INTER_LINEAR)
             return transform(your_image, mas_points)
         else:
             return self.perspective_transform_rgb(your_image, plug_image)
