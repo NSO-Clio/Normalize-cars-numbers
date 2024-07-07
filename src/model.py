@@ -11,7 +11,7 @@ import os
 import cv2
 
 
-def transform(image: np.ndarray, mas_points: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def transform(image: np.ndarray, mas_points: np.ndarray):
     """
     Применяет перспективное преобразование к изображению на основе заданных точек.
 
