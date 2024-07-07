@@ -17,3 +17,15 @@ sudo docker run -v <your_path>:. app
   
 - результат работы модуля будет в ```<your_path>/result```
 
+# Если выпланируете запускать на python
+
+- сначала скачиваем все бибиблиотеки
+```
+pip install -r requirements.txt
+```
+
+- после этого можно запустить проект
+
+```
+python main.py 
+```
