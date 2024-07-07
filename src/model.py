@@ -9,6 +9,7 @@ import segmentation_models_pytorch as smp
 from tqdm import tqdm
 import os
 import cv2
+from typing import List, Tuple, Union
 
 
 def transform(image: np.ndarray, mas_points: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -110,7 +111,7 @@ class SegmentCarNumber:
             cv2.imwrite(os.path.join(output_path, str(ind) + '.jpg'), res_img[0])
             ind += 1
 
-    def predict(self, image: str | Image.Image) -> np.ndarray:
+    def predict(self, image: Union[str, Image.Image]) -> np.ndarray:
         """
         Предсказывает и выравнивает одно изображение.
 
