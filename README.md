@@ -27,7 +27,8 @@ Beeline, сделанно в рамках хакатона Цифровой Пр
 2) Преобразование в нужный размер
 3) Выравнивание по трафарету
 
-![image](https://github.com/NSO-Clio/Normalize-cars-numbers/assets/124351915/6ce8d607-21ed-4bd3-a4c0-35099dfe9645)
+![Screenshot_94_3](https://github.com/NSO-Clio/Normalize-cars-numbers/assets/124351915/e8836455-c033-40fe-973c-1d495bb05120)
+
 
 # Stack технологий
 
