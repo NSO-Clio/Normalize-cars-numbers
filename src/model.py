@@ -89,22 +89,21 @@ class SegmentCarNumber:
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
 
-    def predict_dir(self, dir_imgs: str, output_path: str, batch_size=None, shuffle=False, num_workers=2):
-        result_pred = []
-        data = pd.DataFrame({'image_path': [os.path.join(dir_imgs, f) for f in os.listdir(dir_imgs)]})
-        dataset = SegmentationDataset(dataframe=data, transform=self.image_transform)
-        data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
+    def predict_dir(self, dir_imgs: str, output_path: str):
+        self.model.eval()
+        path_list = [os.path.join(dir_imgs, f) for f in os.listdir(dir_imgs)]
         ind = 0
-        if not os.path.exists(output_path):
-            os.makedirs(output_path)
-        for indx, batch in enumerate(tqdm(data_loader)):
-            images, _ = batch
+        for i in tqdm(path_list):
+            image = Image.open(i).convert('RGB')
+            image = self.image_transform(image)
             with torch.no_grad():
-                prediction = self.model(images.to(self.device))
-            for elem in (torch.sigmoid(prediction).cpu().permute(0, 2, 3, 1).detach().numpy()* 255).astype(np.uint8):
-                cv2.imwrite(os.path.join(output_path, str(ind) + '.jpg'), elem)
-                ind += 1
-        return result_pred
+                prediction = self.model(image.to(self.device).unsqueeze(0))
+            prediction = torch.sigmoid(prediction[0]).cpu().permute(1, 2, 0).detach().numpy()
+            prediction = (prediction * 255).astype(np.uint8)
+            image = cv2.imread(i)
+            res_img = self.binary_model(prediction, image)
+            cv2.imwrite(os.path.join(output_path, str(ind) + '.jpg'), res_img[0])
+            ind += 1
 
     def predict(self, image: str | Image.Image) -> np.ndarray:
         self.model.eval()
