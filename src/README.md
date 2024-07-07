@@ -26,6 +26,10 @@ pip install -r requirements.txt
 
 - после этого можно запустить проект
 
+your_path - папка где лежат ваши изображения 
+
+output_path - в какую папку надо сохранить
+
 ```
-python main.py 
+python main.py <your_path> <output_path>
 ```
